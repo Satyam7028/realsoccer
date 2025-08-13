@@ -1,0 +1,78 @@
+# .github/workflows/ci.yml
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        env:
+          MONGO_INITDB_ROOT_USERNAME: testuser
+          MONGO_INITDB_ROOT_PASSWORD: testpassword
+          MONGO_INITDB_DATABASE: realsoccer_test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install root dependencies
+        run: npm install
+
+      - name: Install server dependencies
+        run: npm install --prefix server
+
+      - name: Install client dependencies
+        run: npm install --prefix client
+
+      - name: Create server .env file
+        run: |
+          echo "NODE_ENV=test" > server/.env
+          echo "PORT=5000" >> server/.env
+          echo "MONGO_URI=mongodb://testuser:testpassword@localhost:27017/realsoccer_test?authSource=admin" >> server/.env
+          echo "JWT_SECRET=ci_test_jwt_secret" >> server/.env
+          echo "JWT_EXPIRES_IN=1h" >> server/.env
+
+      - name: Create client .env file
+        run: |
+          echo "NODE_ENV=test" > client/.env
+          echo "REACT_APP_API_URL=http://localhost:5001/api" >> client/.env
+
+      - name: Run server unit tests
+        run: npm test --prefix server -- test/unit
+
+      - name: Run server integration tests
+        run: npm test --prefix server -- test/integration
+
+      - name: Build client application
+        run: npm run build --prefix client
+
+      - name: Run client tests
+        # Assuming client tests are configured to run with `npm test`
+        # For React apps, this typically runs Jest tests
+        run: npm test --prefix client -- --passWithNoTests # --passWithNoTests allows it to pass if no tests are found yet
+
+  # You can add more jobs here, e.g., for deployment
+  # deploy:
+  #   needs: build-and-test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Deploy to production
+  #       run: echo "Deploying to production..."

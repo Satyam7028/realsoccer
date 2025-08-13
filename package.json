@@ -1,0 +1,24 @@
+{
+  "name": "realsoccer",
+  "version": "1.0.0",
+  "description": "A comprehensive web-based Soccer Application.",
+  "main": "server/src/index.js",
+  "private": true,
+  "scripts": {
+    "start": "npm run start:server",
+    "start:client": "npm run start --prefix client",
+    "start:server": "npm run start --prefix server",
+    "install:all": "npm install --prefix client && npm install --prefix server",
+    "dev:server": "npm run dev --prefix server",
+    "dev:client": "npm run start --prefix client",
+    "test:server": "npm run test --prefix server",
+    "test:client": "npm run test --prefix client"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "tailwindcss": "^4.1.11"
+  }
+}

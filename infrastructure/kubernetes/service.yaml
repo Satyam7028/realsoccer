@@ -1,0 +1,30 @@
+# realsoccer/infrastructure/kubernetes/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: realsoccer-server-service
+  labels:
+    app: realsoccer-server
+spec:
+  selector:
+    app: realsoccer-server
+  ports:
+    - protocol: TCP
+      port: 5000 # Service port
+      targetPort: 5000 # Container port
+  type: ClusterIP # Expose within the cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: realsoccer-client-service
+  labels:
+    app: realsoccer-client
+spec:
+  selector:
+    app: realsoccer-client
+  ports:
+    - protocol: TCP
+      port: 80 # Service port
+      targetPort: 80 # Container port (Nginx)
+  type: ClusterIP # Expose within the cluster (use LoadBalancer or Ingress for external access)

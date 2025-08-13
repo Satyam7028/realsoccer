@@ -1,0 +1,89 @@
+# realsoccer/infrastructure/kubernetes/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realsoccer-server-deployment
+  labels:
+    app: realsoccer-server
+spec:
+  replicas: 1 # Start with 1 replica, scale as needed
+  selector:
+    matchLabels:
+      app: realsoccer-server
+  template:
+    metadata:
+      labels:
+        app: realsoccer-server
+    spec:
+      containers:
+        - name: realsoccer-server
+          image: your-dockerhub-username/realsoccer-server:latest # Replace with your Docker image
+          ports:
+            - containerPort: 5000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "5000"
+            # Reference secrets for sensitive data
+            - name: MONGO_URI
+              valueFrom:
+                secretKeyRef:
+                  name: realsoccer-server-secrets
+                  key: MONGO_URI
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: realsoccer-server-secrets
+                  key: JWT_SECRET
+            # Add other environment variables from your server/.env
+            # - name: EMAIL_HOST
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: realsoccer-server-secrets
+            #       key: EMAIL_HOST
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: realsoccer-client-deployment
+  labels:
+    app: realsoccer-client
+spec:
+  replicas: 1 # Start with 1 replica, scale as needed
+  selector:
+    matchLabels:
+      app: realsoccer-client
+  template:
+    metadata:
+      labels:
+        app: realsoccer-client
+    spec:
+      containers:
+        - name: realsoccer-client
+          image: your-dockerhub-username/realsoccer-client:latest # Replace with your Docker image
+          ports:
+            - containerPort: 80 # Nginx inside client container listens on 80
+          env:
+            - name: NODE_ENV
+              value: production
+            # Reference secrets for client-side API URL
+            - name: REACT_APP_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: realsoccer-client-secrets
+                  key: REACT_APP_API_URL
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"

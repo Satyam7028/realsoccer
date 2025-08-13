@@ -1,0 +1,57 @@
+// server/src/config/logger.js
+const winston = require('winston');
+
+// Define log levels and colors (optional)
+const levels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4,
+};
+
+const colors = {
+  error: 'red',
+  warn: 'yellow',
+  info: 'green',
+  http: 'magenta',
+  debug: 'white',
+};
+
+winston.addColors(colors);
+
+// Choose the appropriate log level based on the environment
+const level = () => {
+  const env = process.env.NODE_ENV || 'development';
+  const isDevelopment = env === 'development';
+  return isDevelopment ? 'debug' : 'warn';
+};
+
+// Define the format of the logs
+const format = winston.format.combine(
+  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+  winston.format.colorize({ all: true }),
+  winston.format.printf(
+    (info) => `${info.timestamp} ${info.level}: ${info.message}`,
+  ),
+);
+
+// Define the transports (where logs will be sent)
+const transports = [
+  new winston.transports.Console({
+    level: level(), // Use the dynamic level
+    format: format,
+  }),
+  // You can add other transports here, e.g., for file logging in production
+  // new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+  // new winston.transports.File({ filename: 'logs/combined.log' }),
+];
+
+// Create the logger instance
+const logger = winston.createLogger({
+  levels,
+  format,
+  transports,
+});
+
+module.exports = logger;

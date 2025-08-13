@@ -1,0 +1,40 @@
+# Node modules
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Environment variables
+.env
+client/.env
+server/.env
+
+# Build artifacts
+build/
+client/build/
+server/dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Test reports
+coverage/
+.nyc_output/
+
+# IDE specific files
+.vscode/
+.idea/
+*.iml
+
+# Misc
+*.backup
+*.swp
