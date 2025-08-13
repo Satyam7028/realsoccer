@@ -88,7 +88,7 @@ Installation
 
 Clone the repository:
 
-git clone [repository-url]
+git clone [https://github.com/Satyam7028/realsoccer.git]
 cd realsoccer
 
 Install dependencies for both client and server:
@@ -175,4 +175,4 @@ License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 Contact
-For any questions or inquiries, please open an issue on the GitHub repository or contact [Your Name/Email].
+For any questions or inquiries, please open an issue on the GitHub repository or contact jadhavsatyam9611@gmail.com
