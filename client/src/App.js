@@ -2,18 +2,20 @@
 
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+
+// Layout Components
 import Header from './components/layout/Header';
-import Footer from './components/layout/Footer';
 import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
 import AdminLayout from './components/layout/AdminLayout';
 
-// Importing providers using the default import syntax
+// Context Providers
 import AuthProvider from './context/AuthContext';
 import CartProvider from './context/CartContext';
 
-// Pages
+// Public Pages
 import HomePage from './pages/Home/HomePage';
-import PlayersPage from './pages/Players/PlayersPage'; // The missing import has been added here
+import PlayersPage from './pages/Players/PlayersPage';
 import PlayerDetailsPage from './pages/PlayerDetails/PlayerDetailsPage';
 import LeaguesPage from './pages/Leagues/LeaguesPage';
 import LeagueDetailsPage from './pages/LeagueDetails/LeagueDetailsPage';
@@ -30,6 +32,10 @@ import OrderHistoryPage from './pages/OrderHistory/OrderHistoryPage';
 import ContactUsPage from './pages/ContactUs/ContactUsPage';
 import AboutUsPage from './pages/AboutUs/AboutUsPage';
 
+// Auth Pages
+import LoginForm from './components/auth/LoginForm';
+import RegisterForm from './components/auth/RegisterForm';
+
 // Admin Pages
 import AdminDashboard from './components/admin/AdminDashboard';
 import PlayerManagementPage from './pages/Admin/PlayerManagement/PlayerManagementPage';
@@ -41,7 +47,10 @@ import ReportingPage from './pages/Admin/Reporting/ReportingPage';
 import OrderManagementPage from './pages/Admin/OrderManagement/OrderManagementPage';
 import UserTable from './components/admin/UserTable';
 
-
+/**
+ * The main component of the application.
+ * It sets up the routing and provides the global context for authentication and cart.
+ */
 function App() {
   return (
     <AuthProvider>
@@ -70,8 +79,13 @@ function App() {
               <Route path="/contact-us" element={<ContactUsPage />} />
               <Route path="/about-us" element={<AboutUsPage />} />
 
-              {/* Admin Routes */}
+              {/* Authentication Routes */}
+              <Route path="/login" element={<LoginForm />} />
+              <Route path="/register" element={<RegisterForm />} />
+
+              {/* Admin Routes - Nested under AdminLayout */}
               <Route path="/admin" element={<AdminLayout />}>
+                {/* The 'index' route renders the AdminDashboard at /admin */}
                 <Route index element={<AdminDashboard />} />
                 <Route path="players" element={<PlayerManagementPage />} />
                 <Route path="leagues" element={<LeagueManagementPage />} />

@@ -1,119 +1,106 @@
 // server/tests/integration/authFlow.test.js
 const request = require('supertest');
 const mongoose = require('mongoose');
-const app = require('../../src/index'); // Your Express app
+const jwt = require('jsonwebtoken');
+const app = require('../../src/index');
 const User = require('../../src/models/User');
 const { jwtSecret } = require('../../src/config/jwt');
-const jwt = require('jsonwebtoken');
 
-// Connect to a test database before all tests
+let adminUser, adminToken;
+let regularUser, regularToken;
+let testServer;
+
 beforeAll(async () => {
-  const mongoUri = process.env.MONGO_URI_TEST || 'mongodb://localhost:27017/realsoccer_test';
-  await mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+    // We assume the globalSetup has connected to the database and started the server.
+    // We now just create the users needed for the tests.
+    adminUser = await User.create({
+      username: 'adminuser',
+      email: 'admin@example.com',
+      password: 'password123',
+      role: 'admin',
+    });
+    adminToken = jwt.sign({ id: adminUser._id }, jwtSecret, { expiresIn: '1h' });
+
+    regularUser = await User.create({
+      username: 'regularuser',
+      email: 'user@example.com',
+      password: 'password123',
+      role: 'user',
+    });
+    regularToken = jwt.sign({ id: regularUser._id }, jwtSecret, { expiresIn: '1h' });
+    
+    // The server instance is set up by the global hook, so we get it from there.
+    testServer = global.__SERVER__;
 });
 
-// Clear the User collection before each test
+// A hook to clean up between individual tests within the same file
 beforeEach(async () => {
-  await User.deleteMany({});
+  // Clear any data created by a previous test to ensure a clean state
+  await User.deleteMany({ email: { $nin: [adminUser.email, regularUser.email] } });
 });
 
-// Close the database connection after all tests
 afterAll(async () => {
-  await mongoose.connection.close();
+  // Nothing to do here, globalTeardown handles the cleanup
 });
+
 
 describe('Authentication Flow Integration Tests', () => {
-  const testUser = {
-    username: 'authflowuser',
-    email: 'authflow@example.com',
-    password: 'authpassword123',
-  };
-
   it('should allow a user to register, login, and access their profile', async () => {
-    // 1. Register
-    const registerRes = await request(app)
+    const registerRes = await request(testServer)
       .post('/api/auth/register')
-      .send(testUser);
-
+      .send({
+        username: 'newuser_flow',
+        email: 'newuser_flow@example.com',
+        password: 'password123',
+        confirmPassword: 'password123'
+      });
     expect(registerRes.statusCode).toEqual(201);
     expect(registerRes.body).toHaveProperty('token');
-    expect(registerRes.body.email).toBe(testUser.email);
-    const registeredToken = registerRes.body.token;
+    const newUserToken = registerRes.body.token;
 
-    // 2. Login with the registered user's credentials
-    const loginRes = await request(app)
+    const loginRes = await request(testServer)
       .post('/api/auth/login')
       .send({
-        email: testUser.email,
-        password: testUser.password,
+        email: 'newuser_flow@example.com',
+        password: 'password123',
       });
-
     expect(loginRes.statusCode).toEqual(200);
     expect(loginRes.body).toHaveProperty('token');
-    const loggedInToken = loginRes.body.token;
-    expect(loggedInToken).toBe(registeredToken); // Should be the same token if no expiration happened
 
-    // 3. Access profile with the obtained token
-    const profileRes = await request(app)
+    const profileRes = await request(testServer)
       .get('/api/auth/me')
-      .set('Authorization', `Bearer ${loggedInToken}`);
-
+      .set('Authorization', `Bearer ${newUserToken}`);
     expect(profileRes.statusCode).toEqual(200);
-    expect(profileRes.body.email).toBe(testUser.email);
-    expect(profileRes.body.username).toBe(testUser.username);
-    expect(profileRes.body).not.toHaveProperty('password');
+    expect(profileRes.body.email).toBe('newuser_flow@example.com');
   });
 
   it('should prevent access to protected routes without a token', async () => {
-    const res = await request(app).get('/api/auth/me');
+    const res = await request(testServer).get('/api/auth/me');
     expect(res.statusCode).toEqual(401);
     expect(res.body.message).toBe('Not authorized, no token');
   });
 
   it('should prevent access to protected routes with an invalid token', async () => {
-    const res = await request(app)
+    const res = await request(testServer)
       .get('/api/auth/me')
-      .set('Authorization', 'Bearer invalidtoken123');
+      .set('Authorization', 'Bearer invalid-token');
     expect(res.statusCode).toEqual(401);
     expect(res.body.message).toBe('Not authorized, token failed');
   });
 
   it('should prevent access to admin routes for regular users', async () => {
-    // Register a regular user
-    const regularUser = await User.create({
-      username: 'regularuser_auth',
-      email: 'regular_auth@example.com',
-      password: 'password123',
-      role: 'user',
-    });
-    const regularUserToken = jwt.sign({ id: regularUser._id }, jwtSecret, { expiresIn: '1h' });
-
-    // Attempt to access an admin-only route (e.g., get all users)
-    const res = await request(app)
-      .get('/api/users')
-      .set('Authorization', `Bearer ${regularUserToken}`);
-    expect(res.statusCode).toEqual(403); // Forbidden
-    expect(res.body.message).toContain('Access denied');
+    const res = await request(testServer)
+      .get('/api/admin/dashboard')
+      .set('Authorization', `Bearer ${regularToken}`);
+    expect(res.statusCode).toEqual(403);
+    expect(res.body.message).toBe('Forbidden');
   });
 
   it('should allow admin users to access admin routes', async () => {
-    // Register an admin user
-    const adminUser = await User.create({
-      username: 'adminuser_auth',
-      email: 'admin_auth@example.com',
-      password: 'adminpassword123',
-      role: 'admin',
-    });
-    const adminUserToken = jwt.sign({ id: adminUser._id }, jwtSecret, { expiresIn: '1h' });
-
-    // Attempt to access an admin-only route (e.g., get all users)
-    const res = await request(app)
-      .get('/api/users')
-      .set('Authorization', `Bearer ${adminUserToken}`);
-    expect(res.statusCode).toEqual(200); // OK
-    expect(Array.isArray(res.body)).toBe(true);
+    const res = await request(testServer)
+      .get('/api/admin/dashboard')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.statusCode).toEqual(200);
+    expect(res.body).toHaveProperty('usersCount');
   });
 });

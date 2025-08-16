@@ -1,9 +1,10 @@
 // client/src/pages/Profile/ProfilePage.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-// We are importing a selection of icons from react-icons/io5 and react-icons/fa
-// to provide clear visual cues for user profile sections.
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { useAuth } from '../../context/AuthContext';
 import {
   IoPersonCircleOutline,
   IoSettingsOutline,
@@ -14,35 +15,60 @@ import {
 } from 'react-icons/io5';
 import { FaLock } from 'react-icons/fa';
 
-// Mock user data for demonstration purposes
-const mockUser = {
-  name: 'Jane Doe',
-  email: 'jane.doe@example.com',
-  memberSince: 'October 2023',
-};
+// Assuming you have a reusable component for form inputs
+import Input from '../../components/common/Input';
+import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
+
+// Define a validation schema for the profile form
+const profileValidationSchema = Yup.object({
+  username: Yup.string()
+    .min(3, 'Username must be at least 3 characters')
+    .required('Username is required'),
+  email: Yup.string()
+    .email('Invalid email address')
+    .required('Email is required'),
+});
 
 const ProfilePage = () => {
+  const { user, logout, loading, error, updateUserProfile } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    name: mockUser.name,
-    email: mockUser.email,
+
+  // Use Formik for form state and validation
+  const formik = useFormik({
+    initialValues: {
+      username: user?.username || '',
+      email: user?.email || '',
+    },
+    validationSchema: profileValidationSchema,
+    enableReinitialize: true, // This is key to re-populate the form when the user object loads
+    onSubmit: async (values) => {
+      // Logic to save updated user data via an API call
+      // The updateUserProfile function should be provided by your AuthContext
+      const success = await updateUserProfile(values);
+      if (success) {
+        setIsEditing(false); // Disable editing on successful save
+      }
+    },
   });
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+  // Handle a direct click on the logout button
+  const handleLogout = () => {
+    logout();
   };
 
-  const handleEditToggle = () => {
-    setIsEditing(!isEditing);
-  };
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p>Loading profile...</p>
+      </div>
+    );
+  }
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    // Here you would handle the logic to save the updated user data to an API.
-    console.log('User data saved:', formData);
-    setIsEditing(false);
-  };
+  // If there's no user, redirect to login (or handle as a protected route)
+  if (!user) {
+    return <p className="text-center">Please log in to view this page.</p>;
+  }
 
   return (
     <div className="bg-gray-100 py-12">
@@ -51,16 +77,20 @@ const ProfilePage = () => {
           {/* Profile Header */}
           <div className="flex flex-col md:flex-row items-center md:justify-between mb-8 pb-6 border-b border-gray-200">
             <div className="flex items-center space-x-4">
-              <IoPersonCircleOutline className="h-16 w-16 text-indigo-600" />
+              <img
+                src={user.profileImage || "https://placehold.co/150x150/cccccc/333333?text=User"}
+                alt="Profile"
+                className="h-16 w-16 rounded-full"
+              />
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">{mockUser.name}</h1>
-                <p className="text-gray-600">Member since {mockUser.memberSince}</p>
+                <h1 className="text-3xl font-bold text-gray-900">{user.username}</h1>
+                <p className="text-gray-600">Member since {new Date(user.createdAt).toLocaleDateString()}</p>
               </div>
             </div>
             
             {/* Edit Profile button */}
             <button
-              onClick={handleEditToggle}
+              onClick={() => setIsEditing(!isEditing)}
               className="mt-4 md:mt-0 flex items-center space-x-2 bg-indigo-500 text-white font-semibold py-2 px-4 rounded-full hover:bg-indigo-600 transition-colors duration-200"
             >
               <IoPencilOutline />
@@ -75,42 +105,46 @@ const ProfilePage = () => {
               <span>Account Information</span>
             </h2>
 
-            <form onSubmit={handleSave}>
+            <form onSubmit={formik.handleSubmit}>
               <div className="space-y-4">
-                <div>
-                  <label className="block text-gray-700 mb-1" htmlFor="name">Full Name</label>
-                  <input
-                    type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-2 border rounded-md ${!isEditing ? 'bg-gray-100' : 'bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500'}`}
-                  />
-                </div>
-                <div>
-                  <label className="block text-gray-700 mb-1" htmlFor="email">Email Address</label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    className={`w-full px-4 py-2 border rounded-md ${!isEditing ? 'bg-gray-100' : 'bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500'}`}
-                  />
-                </div>
+                <Input
+                  id="username"
+                  name="username"
+                  type="text"
+                  label="Username"
+                  placeholder="Enter your username"
+                  value={formik.values.username}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.username && formik.errors.username}
+                  disabled={!isEditing}
+                  fullWidth
+                />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  label="Email Address"
+                  placeholder="Enter your email"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.email && formik.errors.email}
+                  disabled={!isEditing}
+                  fullWidth
+                />
               </div>
               
               {isEditing && (
-                <button
+                <Button
                   type="submit"
-                  className="mt-6 flex items-center space-x-2 bg-green-500 text-white font-semibold py-2 px-4 rounded-full hover:bg-green-600 transition-colors duration-200"
+                  fullWidth={false}
+                  disabled={!formik.isValid || !formik.dirty || formik.isSubmitting}
+                  className="mt-6"
                 >
                   <FaLock />
                   <span>Save Changes</span>
-                </button>
+                </Button>
               )}
             </form>
           </div>
@@ -135,7 +169,7 @@ const ProfilePage = () => {
             {/* Logout Button */}
             <div className="mt-8">
               <button
-                // onClick handler would be implemented here to handle user logout
+                onClick={handleLogout}
                 className="flex items-center space-x-2 text-red-500 hover:text-red-700 transition-colors duration-200"
               >
                 <IoLogOutOutline className="h-6 w-6" />

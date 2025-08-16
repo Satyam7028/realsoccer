@@ -1,14 +1,11 @@
 // client/src/context/AuthContext.js
 
 import React, { createContext, useState, useEffect, useContext } from 'react';
-// Corrected import paths to navigate from the 'context' directory to the 'shared' directory.
 import { API_ENDPOINTS } from '../shared/apiEndpoints';
 import { USER_ROLES } from '../shared/userRoles';
 
-// Export the context itself for use in other providers
 export const AuthContext = createContext();
 
-// Create and export a custom hook to easily access the auth context.
 export const useAuth = () => {
   return useContext(AuthContext);
 };
@@ -17,22 +14,50 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Function to set the user state and authentication status
+  const setAuthData = (userData, token) => {
+    // In a real app, you would also save the token to local storage
+    // or a secure cookie.
+    setUser(userData);
+    setIsAuthenticated(true);
+    // You might also save the token here for later API calls
+    localStorage.setItem('token', token);
+  };
+
+  // Function to clear user state and authentication status
+  const clearAuthData = () => {
+    setUser(null);
+    setIsAuthenticated(false);
+    localStorage.removeItem('token');
+  };
 
   useEffect(() => {
-    // Simulate user authentication on component mount.
-    const checkUser = () => {
-      // Ensure USER_ROLES is defined before accessing its properties.
-      // This fix addresses the "undefined is not an object" error.
-      if (USER_ROLES && USER_ROLES.ADMIN) {
-        const mockUser = {
-          id: '123',
-          name: 'Admin User',
-          email: 'admin@example.com',
-          role: USER_ROLES.ADMIN,
-        };
-  
-        setUser(mockUser);
-        setIsAuthenticated(true);
+    const checkUser = async () => {
+      setLoading(true);
+      setError(null);
+      // Here, you would check for an existing token in storage
+      // and validate it with a backend API call to retrieve user data.
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          // You would have a protected endpoint like '/api/auth/me'
+          const response = await fetch(API_ENDPOINTS.AUTH.ME, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.ok) {
+            const userData = await response.json();
+            setAuthData(userData, token);
+          } else {
+            clearAuthData();
+          }
+        } catch (err) {
+          console.error("Failed to authenticate with token:", err);
+          clearAuthData();
+        }
       }
       setLoading(false);
     };
@@ -41,30 +66,73 @@ const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    console.log('Logging in with:', email, password);
-    console.log('Login endpoint:', API_ENDPOINTS.AUTH.LOGIN);
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
 
-    const mockUser = {
-      id: '124',
-      name: 'Logged-in User',
-      email: email,
-      role: USER_ROLES.USER,
-    };
-    setUser(mockUser);
-    setIsAuthenticated(true);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Login failed');
+      }
+
+      const { user: userData, token } = await response.json();
+      setAuthData(userData, token);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+      return false;
+    }
+  };
+
+  const register = async (username, email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(API_ENDPOINTS.AUTH.REGISTER, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, email, password }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
+      }
+
+      const { user: userData, token } = await response.json();
+      setAuthData(userData, token);
+      setLoading(false);
+      return true;
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+      return false;
+    }
   };
 
   const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
+    clearAuthData();
   };
 
   const value = {
-      user,
-      isAuthenticated,
-      loading,
-      login,
-      logout
+    user,
+    isAuthenticated,
+    loading,
+    error,
+    login,
+    register,
+    logout
   };
 
   return (
@@ -74,6 +142,4 @@ const AuthProvider = ({ children }) => {
   );
 };
 
-// This is the default export, which means other files should use
-// `import AuthProvider from './context/AuthContext';`
 export default AuthProvider;

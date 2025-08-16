@@ -1,5 +1,5 @@
 // client/src/components/auth/RegisterForm.js
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
@@ -8,25 +8,11 @@ import Input from '../common/Input';
 import Button from '../common/Button';
 import Card from '../common/Card';
 import LoadingSpinner from '../common/LoadingSpinner';
+import registerSchema from '../../validation/registerSchema';
 
 const RegisterForm = () => {
+  // Destructure register, loading, and error from the useAuth hook
   const { register, loading, error } = useAuth();
-  const [serverError, setServerError] = useState(null);
-
-  const validationSchema = Yup.object({
-    username: Yup.string()
-      .min(3, 'Username must be at least 3 characters')
-      .required('Username is required'),
-    email: Yup.string()
-      .email('Invalid email address')
-      .required('Email is required'),
-    password: Yup.string()
-      .min(6, 'Password must be at least 6 characters')
-      .required('Password is required'),
-    confirmPassword: Yup.string()
-      .oneOf([Yup.ref('password'), null], 'Passwords must match')
-      .required('Confirm Password is required'),
-  });
 
   const formik = useFormik({
     initialValues: {
@@ -35,21 +21,13 @@ const RegisterForm = () => {
       password: '',
       confirmPassword: '',
     },
-    validationSchema: validationSchema,
+    // Use the imported validation schema
+    validationSchema: registerSchema,
     onSubmit: async (values) => {
-      setServerError(null); // Clear previous server errors
-      const success = await register(values.username, values.email, values.password);
-      if (!success) {
-        // Error message is already set by useAuth context
-        setServerError(error); // Update local state for immediate display if needed
-      }
+      // Pass the username, email, and password to the register function
+      await register(values.username, values.email, values.password);
     },
   });
-
-  // Effect to update local server error if context error changes
-  React.useEffect(() => {
-    setServerError(error);
-  }, [error]);
 
   return (
     <div className="flex justify-center items-center min-h-screen-minus-header-footer py-8">
@@ -109,9 +87,9 @@ const RegisterForm = () => {
             fullWidth
           />
 
-          {serverError && (
+          {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md relative mb-4" role="alert">
-              <span className="block sm:inline">{serverError}</span>
+              <span className="block sm:inline">{error}</span>
             </div>
           )}
 

@@ -8,6 +8,7 @@ const { jwtSecret } = require('../../src/config/jwt');
 
 // Mock mongoose connect and disconnect
 jest.mock('mongoose', () => ({
+  ...jest.requireActual('mongoose'),
   connect: jest.fn(),
   disconnect: jest.fn(),
   Schema: jest.fn((schema) => ({
@@ -16,15 +17,22 @@ jest.mock('mongoose', () => ({
       matchPassword: jest.fn(),
     },
   })),
-  model: jest.fn((name, schema) => ({
-    findOne: jest.fn(),
-    create: jest.fn(),
-    findById: jest.fn(),
-    select: jest.fn().mockReturnThis(), // Allow chaining .select()
-  })),
+  model: jest.fn((name, schema) => {
+    const model = {
+      findOne: jest.fn(),
+      create: jest.fn(),
+      findById: jest.fn().mockImplementation(() => {
+        const chainable = {
+          select: jest.fn().mockReturnThis(),
+        };
+        return chainable;
+      }),
+    };
+    return model;
+  }),
   Types: {
     ObjectId: {
-      isValid: jest.fn().mockReturnValue(true), // Mock for mongoose.Types.ObjectId.isValid
+      isValid: jest.fn().mockReturnValue(true),
     },
   },
 }));
@@ -37,7 +45,6 @@ describe('Auth Service Unit Tests', () => {
   let mockUser;
 
   beforeEach(() => {
-    // Reset mocks before each test
     jest.clearAllMocks();
 
     mockUser = {
@@ -50,13 +57,16 @@ describe('Auth Service Unit Tests', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
       matchPassword: jest.fn(),
-      toObject: jest.fn().mockReturnThis(), // Mock toObject for .select() and other operations
+      toObject: jest.fn().mockReturnThis(),
     };
 
-    // Default mock implementations
+    // Correctly mock the chained behavior for findById().select()
+    User.findById.mockReturnValue({
+      select: jest.fn().mockResolvedValue(mockUser),
+    });
+
     User.findOne.mockResolvedValue(null);
     User.create.mockResolvedValue(mockUser);
-    User.findById.mockResolvedValue(mockUser);
     bcrypt.hash.mockResolvedValue('newhashedpassword');
     bcrypt.compare.mockResolvedValue(true);
     jwt.sign.mockReturnValue('mocked_jwt_token');
@@ -84,14 +94,14 @@ describe('Auth Service Unit Tests', () => {
     });
 
     it('should throw an error if user already exists', async () => {
-      User.findOne.mockResolvedValue(mockUser); // Simulate user existing
+      User.findOne.mockResolvedValue(mockUser);
 
       await expect(register('testuser', 'test@example.com', 'password123')).rejects.toThrow('User with that email or username already exists');
       expect(User.create).not.toHaveBeenCalled();
     });
 
     it('should throw an error if user creation fails', async () => {
-      User.create.mockResolvedValue(null); // Simulate creation failure
+      User.create.mockResolvedValue(null);
 
       await expect(register('newuser', 'new@example.com', 'password123')).rejects.toThrow('Invalid user data provided for registration');
     });
@@ -100,7 +110,7 @@ describe('Auth Service Unit Tests', () => {
   describe('login', () => {
     it('should log in a user successfully', async () => {
       User.findOne.mockResolvedValue(mockUser);
-      mockUser.matchPassword.mockResolvedValue(true); // Ensure matchPassword returns true
+      mockUser.matchPassword.mockResolvedValue(true);
 
       const loggedInUser = await login('test@example.com', 'password123');
 
@@ -117,14 +127,14 @@ describe('Auth Service Unit Tests', () => {
     });
 
     it('should throw an error for invalid email', async () => {
-      User.findOne.mockResolvedValue(null); // No user found
+      User.findOne.mockResolvedValue(null);
 
       await expect(login('nonexistent@example.com', 'password123')).rejects.toThrow('Invalid email or password');
     });
 
     it('should throw an error for invalid password', async () => {
       User.findOne.mockResolvedValue(mockUser);
-      mockUser.matchPassword.mockResolvedValue(false); // Incorrect password
+      mockUser.matchPassword.mockResolvedValue(false);
 
       await expect(login('test@example.com', 'wrongpassword')).rejects.toThrow('Invalid email or password');
     });
@@ -133,7 +143,6 @@ describe('Auth Service Unit Tests', () => {
   describe('getUserProfile', () => {
     it('should retrieve user profile successfully', async () => {
       const profile = await getUserProfile(mockUser._id);
-
       expect(User.findById).toHaveBeenCalledWith(mockUser._id);
       expect(User.findById().select).toHaveBeenCalledWith('-password');
       expect(profile).toEqual({
@@ -146,7 +155,9 @@ describe('Auth Service Unit Tests', () => {
     });
 
     it('should throw an error if user profile not found', async () => {
-      User.findById.mockResolvedValue(null); // User not found
+      User.findById.mockReturnValue({
+        select: jest.fn().mockResolvedValue(null),
+      });
 
       await expect(getUserProfile('nonexistentid')).rejects.toThrow('User not found');
     });
