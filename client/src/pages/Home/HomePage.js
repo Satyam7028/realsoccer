@@ -1,7 +1,8 @@
 // client/src/pages/Home/HomePage.js
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 // We'll use a few icons from react-icons/io5 to add visual flair
 // to the homepage sections.
 import {
@@ -10,20 +11,36 @@ import {
   IoChevronForwardOutline,
 } from 'react-icons/io5';
 
-// Mock data for demonstration
-const featuredNews = [
-  { id: 1, title: 'Team Wins Cup!', summary: 'A thrilling victory in the final match of the season...', imageUrl: 'https://placehold.co/400x250/22c55e/ffffff?text=News+1' },
-  { id: 2, title: 'Transfer Window News', summary: 'Top player signs a new contract with the club...', imageUrl: 'https://placehold.co/400x250/fde047/ffffff?text=News+2' },
-  { id: 3, title: 'New Stadium Unveiled', summary: 'The club reveals its new state-of-the-art stadium...', imageUrl: 'https://placehold.co/400x250/3b82f6/ffffff?text=News+3' },
-];
-
-const featuredProducts = [
-  { id: 1, name: 'Home Jersey', price: 79.99, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=Jersey+1' },
-  { id: 2, name: 'Team Scarf', price: 24.99, imageUrl: 'https://placehold.co/400x400/6b7280/ffffff?text=Scarf' },
-  { id: 3, name: 'Player T-shirt', price: 34.99, imageUrl: 'https://placehold.co/400x400/4b5563/ffffff?text=T-shirt' },
-];
-
 const HomePage = () => {
+  const [featuredNews, setFeaturedNews] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch news articles from the backend API
+        const newsRes = await axios.get('/api/news');
+        setFeaturedNews(newsRes.data.slice(0, 3)); // Get top 3 news
+        
+        // Fetch products from the backend API
+        const productsRes = await axios.get('/api/shop/products');
+        setFeaturedProducts(productsRes.data.slice(0, 3)); // Get top 3 products
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Failed to fetch featured data', error);
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center py-10">Loading...</div>;
+  }
+
   return (
     <div className="bg-gray-100">
       {/* Hero Section */}

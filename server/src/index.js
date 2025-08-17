@@ -21,9 +21,9 @@ const leagueRoutes = require('./routes/leagueRoutes');
 const newsRoutes = require('./routes/newsRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
-const playerRoutes = require('./routes/playerRotues');
+const playerRoutes = require('./routes/playerRoutes');
 const shopRoutes = require('./routes/shopRoutes');
-const userRoutes = require('./routes/userRotues');
+const userRoutes = require('./routes/userRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 // Connect to the database

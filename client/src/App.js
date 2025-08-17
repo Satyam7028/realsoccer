@@ -10,6 +10,9 @@ import Footer from './components/layout/Footer';
 import AdminLayout from './components/layout/AdminLayout';
 
 // Context Providers
+// The use of both Redux slices and Context Providers (like AuthProvider and CartProvider)
+// might lead to state management issues. It's often best to choose one approach
+// (e.g., Redux Toolkit for all state) for consistency.
 import AuthProvider from './context/AuthContext';
 import CartProvider from './context/CartContext';
 
@@ -32,7 +35,7 @@ import OrderHistoryPage from './pages/OrderHistory/OrderHistoryPage';
 import ContactUsPage from './pages/ContactUs/ContactUsPage';
 import AboutUsPage from './pages/AboutUs/AboutUsPage';
 
-// Auth Pages
+// Authentication Pages
 import LoginForm from './components/auth/LoginForm';
 import RegisterForm from './components/auth/RegisterForm';
 
@@ -46,7 +49,9 @@ import FixtureManagementPage from './pages/Admin/FixtureManagement/FixtureManage
 import ReportingPage from './pages/Admin/Reporting/ReportingPage';
 import OrderManagementPage from './pages/Admin/OrderManagement/OrderManagementPage';
 import UserTable from './components/admin/UserTable';
+import UserManagementPage from './pages/Admin/UserManagement/UserManagementPage';
 
+import PaymentsPage from './pages/Payments/PAymentsPage';
 /**
  * The main component of the application.
  * It sets up the routing and provides the global context for authentication and cart.
@@ -78,11 +83,12 @@ function App() {
               <Route path="/order-history" element={<OrderHistoryPage />} />
               <Route path="/contact-us" element={<ContactUsPage />} />
               <Route path="/about-us" element={<AboutUsPage />} />
+              <Route path="/payments" element={<PaymentsPage />} />
 
-              {/* Authentication Routes */}
+               {/* Authentication Routes */}
               <Route path="/login" element={<LoginForm />} />
               <Route path="/register" element={<RegisterForm />} />
-
+              
               {/* Admin Routes - Nested under AdminLayout */}
               <Route path="/admin" element={<AdminLayout />}>
                 {/* The 'index' route renders the AdminDashboard at /admin */}
@@ -94,6 +100,7 @@ function App() {
                 <Route path="fixtures" element={<FixtureManagementPage />} />
                 <Route path="reporting" element={<ReportingPage />} />
                 <Route path="orders" element={<OrderManagementPage />} />
+                <Route path="users" element={<UserManagementPage />} />
                 <Route path="users" element={<UserTable users={[]} onEditUser={() => {}} onDeleteUser={() => {}} />} />
               </Route>
             </Routes>
