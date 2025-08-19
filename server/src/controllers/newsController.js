@@ -7,12 +7,11 @@ const logger = require('../config/logger');
 // @route   POST /api/news
 // @access  Private/Admin
 const createNewsArticle = asyncHandler(async (req, res) => {
-  const { title, content, author, category, imageUrl, tags } = req.body;
+  const { title, content, author, category, imageUrl, sourceUrl } = req.body;
 
-  // Basic validation (more detailed validation is in newsArticleValidator)
-  if (!title || !content || !author) {
+  if (!title || !content || !author || !category) {
     res.status(400);
-    throw new Error('Please fill in all required news article fields: title, content, author');
+    throw new Error('Please enter all required fields for a new news article');
   }
 
   const newsArticle = await NewsArticle.create({
@@ -21,39 +20,35 @@ const createNewsArticle = asyncHandler(async (req, res) => {
     author,
     category,
     imageUrl,
-    tags,
+    sourceUrl,
   });
 
-  if (newsArticle) {
-    logger.info(`News article created: "${newsArticle.title}" by ${newsArticle.author}`);
-    res.status(201).json(newsArticle);
-  } else {
-    res.status(400);
-    throw new Error('Invalid news article data');
-  }
+  res.status(201).json(newsArticle);
 });
 
-// @desc    Get all news articles
-// @route   GET /api/news
+// @desc    Get all news articles with pagination
+// @route   GET /api/news?page=<number>&limit=<number>
 // @access  Public
 const getNewsArticles = asyncHandler(async (req, res) => {
-  // You can add query parameters for filtering (e.g., by category, author, tags)
-  const query = {};
-  if (req.query.category) {
-    query.category = req.query.category;
-  }
-  if (req.query.author) {
-    query.author = req.query.author;
-  }
-  if (req.query.tag) {
-    query.tags = { $in: [req.query.tag] };
-  }
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
 
-  const newsArticles = await NewsArticle.find(query);
-  res.json(newsArticles);
+  const totalNewsArticles = await NewsArticle.countDocuments({});
+
+  const newsArticles = await NewsArticle.find({})
+    .skip(skip)
+    .limit(limit);
+
+  res.json({
+    newsArticles,
+    page,
+    pages: Math.ceil(totalNewsArticles / limit),
+    totalNewsArticles,
+  });
 });
 
-// @desc    Get news article by ID
+// @desc    Get a single news article by ID
 // @route   GET /api/news/:id
 // @access  Public
 const getNewsArticleById = asyncHandler(async (req, res) => {
@@ -67,23 +62,22 @@ const getNewsArticleById = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update news article by ID
+// @desc    Update a news article by ID
 // @route   PUT /api/news/:id
 // @access  Private/Admin
 const updateNewsArticle = asyncHandler(async (req, res) => {
   const newsArticle = await NewsArticle.findById(req.params.id);
+  const { title, content, author, category, imageUrl, sourceUrl } = req.body;
 
   if (newsArticle) {
-    newsArticle.title = req.body.title || newsArticle.title;
-    newsArticle.content = req.body.content || newsArticle.content;
-    newsArticle.author = req.body.author || newsArticle.author;
-    newsArticle.category = req.body.category || newsArticle.category;
-    newsArticle.imageUrl = req.body.imageUrl || newsArticle.imageUrl;
-    newsArticle.tags = req.body.tags || newsArticle.tags;
+    newsArticle.title = title || newsArticle.title;
+    newsArticle.content = content || newsArticle.content;
+    newsArticle.author = author || newsArticle.author;
+    newsArticle.category = category || newsArticle.category;
+    newsArticle.imageUrl = imageUrl || newsArticle.imageUrl;
+    newsArticle.sourceUrl = sourceUrl || newsArticle.sourceUrl;
 
     const updatedNewsArticle = await newsArticle.save();
-
-    logger.info(`News article updated: "${updatedNewsArticle.title}"`);
     res.json(updatedNewsArticle);
   } else {
     res.status(404);
@@ -91,15 +85,14 @@ const updateNewsArticle = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Delete news article by ID
+// @desc    Delete a news article by ID
 // @route   DELETE /api/news/:id
 // @access  Private/Admin
 const deleteNewsArticle = asyncHandler(async (req, res) => {
   const newsArticle = await NewsArticle.findById(req.params.id);
 
   if (newsArticle) {
-    await newsArticle.remove(); // Mongoose v5: newsArticle.remove(), Mongoose v6+: newsArticle.deleteOne()
-    logger.info(`News article deleted: "${newsArticle.title}"`);
+    await newsArticle.deleteOne();
     res.json({ message: 'News article removed' });
   } else {
     res.status(404);

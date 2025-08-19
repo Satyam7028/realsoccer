@@ -7,22 +7,20 @@ const logger = require('../config/logger');
 // @route   POST /api/shop/products
 // @access  Private/Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, description, price, category, brand, imageUrl, stock } = req.body;
+  const { name, description, category, price, stock, imageUrl } = req.body;
 
-  // Basic validation (more detailed validation is in productValidator)
-  if (!name || !description || !price || !category || !stock) {
+  if (!name || !description || !category || !price || !stock || !imageUrl) {
     res.status(400);
-    throw new Error('Please fill in all required product fields: name, description, price, category, stock');
+    throw new Error('Please enter all required fields');
   }
 
   const product = await Product.create({
     name,
     description,
-    price,
     category,
-    brand,
-    imageUrl,
+    price,
     stock,
+    imageUrl,
   });
 
   if (product) {
@@ -34,19 +32,34 @@ const createProduct = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get all products
-// @route   GET /api/shop/products
+// @desc    Get all products with pagination
+// @route   GET /api/shop/products?page=<number>&limit=<number>
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({});
-  res.json(products);
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
+
+  const totalProducts = await Product.countDocuments({});
+
+  const products = await Product.find({})
+    .skip(skip)
+    .limit(limit)
+    .populate('category'); // Ensure the category is populated
+
+  res.json({
+    products,
+    page,
+    pages: Math.ceil(totalProducts / limit),
+    totalProducts,
+  });
 });
 
 // @desc    Get product by ID
 // @route   GET /api/shop/products/:id
 // @access  Public
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  const product = await Product.findById(req.params.id).populate('category');
 
   if (product) {
     res.json(product);
@@ -61,17 +74,15 @@ const getProductById = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const updateProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
+  const { name, description, category, price, stock, imageUrl } = req.body;
 
   if (product) {
-    product.name = req.body.name || product.name;
-    product.description = req.body.description || product.description;
-    product.price = req.body.price || product.price;
-    product.category = req.body.category || product.category;
-    product.brand = req.body.brand || product.brand;
-    product.imageUrl = req.body.imageUrl || product.imageUrl;
-    product.stock = req.body.stock || product.stock;
-    product.rating = req.body.rating || product.rating;
-    product.numReviews = req.body.numReviews || product.numReviews;
+    product.name = name || product.name;
+    product.description = description || product.description;
+    product.category = category || product.category;
+    product.price = price || product.price;
+    product.stock = stock || product.stock;
+    product.imageUrl = imageUrl || product.imageUrl;
 
     const updatedProduct = await product.save();
 
@@ -90,7 +101,7 @@ const deleteProduct = asyncHandler(async (req, res) => {
   const product = await Product.findById(req.params.id);
 
   if (product) {
-    await product.remove(); // Mongoose v5: product.remove(), Mongoose v6+: product.deleteOne()
+    await product.deleteOne();
     logger.info(`Product deleted: ${product.name}`);
     res.json({ message: 'Product removed' });
   } else {

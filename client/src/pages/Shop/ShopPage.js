@@ -1,37 +1,52 @@
-// client/src/pages/Shop/ShopPage.js
-
 import React, { useState, useEffect } from 'react';
-// This import path has been corrected to resolve the module not found error.
 import { API_ENDPOINTS } from '../../shared/apiEndpoints';
 import { IoShirtOutline } from 'react-icons/io5';
-import ProductCard from '../../components/shop/ProductCard';
 import ProductFilter from '../../components/shop/ProductFilter';
-
-// Mock data for demonstration purposes
-const mockProducts = [
-  { id: 1, name: 'Home Jersey', price: 79.99, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=Jersey+1', category: 'Apparel' },
-  { id: 2, name: 'Away Jersey', price: 79.99, imageUrl: 'https://placehold.co/400x400/6b7280/ffffff?text=Jersey+2', category: 'Apparel' },
-  { id: 3, name: 'Team Scarf', price: 24.99, imageUrl: 'https://placehold.co/400x400/4b5563/ffffff?text=Scarf', category: 'Accessories' },
-  { id: 4, name: 'Player T-shirt', price: 34.99, imageUrl: 'https://placehold.co/400x400/e2e8f0/4a5568?text=T-shirt', category: 'Apparel' },
-  { id: 5, name: 'Team Cap', price: 19.99, imageUrl: 'https://placehold.co/400x400/cbd5e1/4a5568?text=Cap', category: 'Accessories' },
-];
+import ProductCard from '../../components/shop/ProductCard';
 
 const ShopPage = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     category: 'All',
     sortBy: 'Relevance',
   });
 
   useEffect(() => {
-    setLoading(true);
-    console.log('Fetching products from:', API_ENDPOINTS.PRODUCTS);
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        console.log('Fetching products from:', API_ENDPOINTS.PRODUCTS);
+        const response = await fetch(API_ENDPOINTS.PRODUCTS);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        setProducts(data);
+      } catch (err) {
+        console.error('Error fetching products:', err);
+        setError(err.message);
+        
+        // Fallback to mock data if API fails
+        const mockProducts = [
+          { id: 1, name: 'Home Jersey', price: 79.99, imageUrl: 'https://placehold.co/400x400/94a3b8/ffffff?text=Jersey+1', category: 'Apparel' },
+          { id: 2, name: 'Away Jersey', price: 79.99, imageUrl: 'https://placehold.co/400x400/6b7280/ffffff?text=Jersey+2', category: 'Apparel' },
+          { id: 3, name: 'Team Scarf', price: 24.99, imageUrl: 'https://placehold.co/400x400/4b5563/ffffff?text=Scarf', category: 'Accessories' },
+          { id: 4, name: 'Player T-shirt', price: 34.99, imageUrl: 'https://placehold.co/400x400/e2e8f0/4a5568?text=T-shirt', category: 'Apparel' },
+          { id: 5, name: 'Team Cap', price: 19.99, imageUrl: 'https://placehold.co/400x400/cbd5e1/4a5568?text=Cap', category: 'Accessories' },
+        ];
+        setProducts(mockProducts);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    setTimeout(() => {
-      setProducts(mockProducts);
-      setLoading(false);
-    }, 500);
+    fetchProducts();
   }, []);
 
   const handleFilterChange = (newFilters) => {
@@ -48,13 +63,21 @@ const ShopPage = () => {
     if (filters.sortBy === 'Price: High to Low') {
       return b.price - a.price;
     }
-    return 0; // Default to relevance
+    return 0;
   });
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen text-xl text-gray-600">
         Loading shop...
+      </div>
+    );
+  }
+
+  if (error && products.length === 0) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-xl text-red-600">
+        Error loading products: {error}
       </div>
     );
   }
@@ -87,6 +110,6 @@ const ShopPage = () => {
       </div>
     </div>
   );
-  };
+};
 
 export default ShopPage;

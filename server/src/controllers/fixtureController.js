@@ -1,75 +1,67 @@
 // server/src/controllers/fixtureController.js
 const asyncHandler = require('express-async-handler');
 const Fixture = require('../models/Fixture');
-const League = require('../models/League'); // To populate league details
-const Player = require('../models/Player'); // To populate player details in events
 const logger = require('../config/logger');
 
 // @desc    Create a new fixture
 // @route   POST /api/fixtures
 // @access  Private/Admin
 const createFixture = asyncHandler(async (req, res) => {
-  const { homeTeam, awayTeam, league, date, location, status, score, events } = req.body;
+  const {
+    league,
+    homeTeam,
+    awayTeam,
+    date,
+    time,
+    location,
+    score,
+    status,
+    details,
+  } = req.body;
 
-  // Basic validation
-  if (!homeTeam || !awayTeam || !league || !date || !location) {
+  if (!league || !homeTeam || !awayTeam || !date || !time) {
     res.status(400);
-    throw new Error('Please fill in all required fixture fields: homeTeam, awayTeam, league, date, location');
-  }
-
-  // Check if the league exists
-  const existingLeague = await League.findById(league);
-  if (!existingLeague) {
-    res.status(404);
-    throw new Error('League not found');
+    throw new Error('Please enter all required fields for a new fixture');
   }
 
   const fixture = await Fixture.create({
+    league,
     homeTeam,
     awayTeam,
-    league,
     date,
+    time,
     location,
-    status,
     score,
-    events,
+    status,
+    details,
   });
 
-  if (fixture) {
-    logger.info(`Fixture created: ${fixture.homeTeam} vs ${fixture.awayTeam}`);
-    res.status(201).json(fixture);
-  } else {
-    res.status(400);
-    throw new Error('Invalid fixture data');
-  }
+  res.status(201).json(fixture);
 });
 
-// @desc    Get all fixtures
-// @route   GET /api/fixtures
+// @desc    Get all fixtures with pagination
+// @route   GET /api/fixtures?page=<number>&limit=<number>
 // @access  Public
 const getFixtures = asyncHandler(async (req, res) => {
-  // You can add query parameters for filtering (e.g., by league, date, status)
-  const query = {};
-  if (req.query.league) {
-    query.league = req.query.league;
-  }
-  if (req.query.status) {
-    query.status = req.query.status;
-  }
-  if (req.query.date) {
-    // Example: filter by date (e.g., fixtures on a specific day)
-    const startOfDay = new Date(req.query.date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(req.query.date);
-    endOfDay.setHours(23, 59, 59, 999);
-    query.date = { $gte: startOfDay, $lte: endOfDay };
-  }
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const skip = (page - 1) * limit;
 
-  const fixtures = await Fixture.find(query)
-    .populate('league', 'name country') // Populate league name and country
-    .populate('events.player', 'name team position'); // Populate player name, team, position in events
+  const totalFixtures = await Fixture.countDocuments({});
 
-  res.json(fixtures);
+  const fixtures = await Fixture.find({})
+    .skip(skip)
+    .limit(limit)
+    .populate('league') // Populate the league reference
+    .populate('homeTeam') // Populate home team
+    .populate('awayTeam'); // Populate away team
+
+  res.json({
+    fixtures,
+    page,
+    pages: Math.ceil(totalFixtures / limit),
+    totalFixtures,
+  });
 });
 
 // @desc    Get fixture by ID
@@ -77,8 +69,9 @@ const getFixtures = asyncHandler(async (req, res) => {
 // @access  Public
 const getFixtureById = asyncHandler(async (req, res) => {
   const fixture = await Fixture.findById(req.params.id)
-    .populate('league', 'name country')
-    .populate('events.player', 'name team position');
+    .populate('league')
+    .populate('homeTeam')
+    .populate('awayTeam');
 
   if (fixture) {
     res.json(fixture);
@@ -95,18 +88,17 @@ const updateFixture = asyncHandler(async (req, res) => {
   const fixture = await Fixture.findById(req.params.id);
 
   if (fixture) {
+    fixture.league = req.body.league || fixture.league;
     fixture.homeTeam = req.body.homeTeam || fixture.homeTeam;
     fixture.awayTeam = req.body.awayTeam || fixture.awayTeam;
-    fixture.league = req.body.league || fixture.league;
     fixture.date = req.body.date || fixture.date;
+    fixture.time = req.body.time || fixture.time;
     fixture.location = req.body.location || fixture.location;
-    fixture.status = req.body.status || fixture.status;
     fixture.score = req.body.score || fixture.score;
-    fixture.events = req.body.events || fixture.events;
+    fixture.status = req.body.status || fixture.status;
+    fixture.details = req.body.details || fixture.details;
 
     const updatedFixture = await fixture.save();
-
-    logger.info(`Fixture updated: ${updatedFixture.homeTeam} vs ${updatedFixture.awayTeam}`);
     res.json(updatedFixture);
   } else {
     res.status(404);
@@ -121,8 +113,7 @@ const deleteFixture = asyncHandler(async (req, res) => {
   const fixture = await Fixture.findById(req.params.id);
 
   if (fixture) {
-    await fixture.remove(); // Mongoose v5: fixture.remove(), Mongoose v6+: fixture.deleteOne()
-    logger.info(`Fixture deleted: ${fixture.homeTeam} vs ${fixture.awayTeam}`);
+    await fixture.deleteOne();
     res.json({ message: 'Fixture removed' });
   } else {
     res.status(404);
@@ -130,23 +121,10 @@ const deleteFixture = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get live fixtures
-// @route   GET /api/fixtures/live
-// @access  Public
-const getLiveFixtures = asyncHandler(async (req, res) => {
-  // Live fixtures are those with status 'live'
-  const liveFixtures = await Fixture.find({ status: 'live' })
-    .populate('league', 'name country')
-    .populate('events.player', 'name team position');
-  res.json(liveFixtures);
-});
-
-
 module.exports = {
   createFixture,
   getFixtures,
   getFixtureById,
   updateFixture,
   deleteFixture,
-  getLiveFixtures,
 };

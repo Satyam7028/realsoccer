@@ -1,20 +1,46 @@
 // client/src/hooks/useAuth.js
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext'; // Import the AuthContext
+import { useDispatch, useSelector } from 'react-redux';
+import { login, logout, register } from '../state/authSlice'; // Corrected import names
+import authService from '../services/authService';
 
-/**
- * Custom hook to access the authentication context.
- * Provides user, token, loading, error, and auth functions (login, register, logout).
- *
- * @returns {object} - The authentication context value.
- * @throws {Error} If used outside of an AuthProvider.
- */
 const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const dispatch = useDispatch();
+  const { user, isLoading, isError, message } = useSelector(
+    (state) => state.auth
+  );
+
+  const handleLogin = async (userData) => {
+    try {
+      const response = await authService.login(userData);
+      dispatch(login(response));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    dispatch(logout());
+  };
+
+  const handleRegister = async (userData) => {
+    try {
+      const response = await authService.register(userData);
+      dispatch(register(response));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return {
+    user,
+    isLoading,
+    isError,
+    message,
+    login: handleLogin,
+    logout: handleLogout,
+    register: handleRegister,
+  };
 };
 
 export default useAuth;

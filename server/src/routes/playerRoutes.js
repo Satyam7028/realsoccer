@@ -6,10 +6,10 @@ const {
   getPlayerById,
   updatePlayer,
   deletePlayer,
-} = require('../controllers/playerController'); // We will create this controller
+} = require('../controllers/playerController');
 const { protect } = require('../middleware/authMiddleware');
 const roleGuard = require('../middleware/roleGuard');
-const { playerValidation } = require('../validators/playerValidator'); // We will create this validator
+const { playerValidation } = require('../validators/playerValidator'); // Import the new validator
 const validateRequest = require('../middleware/validateRequest');
 
 const router = express.Router();

@@ -2,53 +2,43 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
-const userSchema = mongoose.Schema(
-  {
-    username: {
-      type: String,
-      required: [true, 'Please add a username'],
-      unique: true,
-      trim: true,
-      minlength: 3,
-    },
-    email: {
-      type: String,
-      required: [true, 'Please add an email'],
-      unique: true,
-      trim: true,
-      match: [
-        /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
-        'Please enter a valid email address',
-      ],
-    },
-    password: {
-      type: String,
-      required: [true, 'Please add a password'],
-      minlength: 6,
-    },
-    role: {
-      type: String,
-      enum: ['user', 'admin'], // Define possible roles
-      default: 'user',
-    },
-    profileImage: {
-      type: String,
-      default: 'https://placehold.co/150x150/cccccc/333333?text=User', // Placeholder image
-    },
-    // Add other user-specific fields as needed (e.g., firstName, lastName, dateOfBirth)
+const userSchema = mongoose.Schema({
+  username: {
+    type: String,
+    required: [true, 'Please add a username'],
+    unique: true,
   },
-  {
-    timestamps: true, // Adds createdAt and updatedAt timestamps
-  }
-);
+  email: {
+    type: String,
+    required: [true, 'Please add an email'],
+    unique: true,
+  },
+  password: {
+    type: String,
+    required: [true, 'Please add a password'],
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
+  },
+  profileImage: {
+    type: String,
+    default: 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png',
+  },
+}, {
+  timestamps: true,
+});
 
-// Hash password before saving the user
+// Hash password before saving
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) {
     next();
   }
+  // Add salt rounds for stronger hashing
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Method to compare entered password with hashed password in the database
@@ -57,5 +47,4 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
 };
 
 const User = mongoose.model('User', userSchema);
-
 module.exports = User;

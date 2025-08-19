@@ -1,64 +1,52 @@
-// client/src/services/shopService.js
-import api from './api'; // Our configured Axios instance
-import { API_ENDpoints } from '../../shared/constants/apiEndpoints';
+// client/src/services/shopservice.js
+import api from './api';
 
-/**
- * Fetches all products from the API.
- * @param {object} [filters={}] - Optional filters for products (e.g., { category: 'jersey', searchTerm: 'ball' }).
- * @returns {Promise<Array<object>>} - A promise that resolves to an array of product objects.
- */
-const getAllProducts = async (filters = {}) => {
-  const response = await api.get(API_ENDPOINTS.SHOP.PRODUCTS, { params: filters });
-  return response.data;
+const getProducts = async (page = 1, limit = 10, filters = {}) => {
+  try {
+    const response = await api.get(`/shop/products?page=${page}&limit=${limit}`, { params: filters });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/**
- * Fetches a single product by its ID from the API.
- * @param {string} id - The ID of the product to fetch.
- * @returns {Promise<object>} - A promise that resolves to a product object.
- */
 const getProductById = async (id) => {
-  const response = await api.get(API_ENDPOINTS.SHOP.PRODUCT_BY_ID(id));
-  return response.data;
+  try {
+    const response = await api.get(`/shop/products/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-// Admin-specific product services (e.g., create, update, delete) would go here
-// These would typically require an authenticated admin user.
-
-/**
- * Creates a new product. (Admin only)
- * @param {object} productDetails - The details of the new product.
- * @returns {Promise<object>} - The created product object.
- */
-const createProduct = async (productDetails) => {
-  const response = await api.post(API_ENDPOINTS.SHOP.PRODUCTS, productDetails);
-  return response.data;
+const createProduct = async (productData) => {
+  try {
+    const response = await api.post('/shop/products', productData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/**
- * Updates an existing product. (Admin only)
- * @param {string} id - The ID of the product to update.
- * @param {object} updateData - The data to update the product with.
- * @returns {Promise<object>} - The updated product object.
- */
-const updateProduct = async (id, updateData) => {
-  const response = await api.put(API_ENDPOINTS.SHOP.PRODUCT_BY_ID(id), updateData);
-  return response.data;
+const updateProduct = async (id, productData) => {
+  try {
+    const response = await api.put(`/shop/products/${id}`, productData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
 };
 
-/**
- * Deletes a product. (Admin only)
- * @param {string} id - The ID of the product to delete.
- * @returns {Promise<object>} - A success message.
- */
 const deleteProduct = async (id) => {
-  const response = await api.delete(API_ENDPOINTS.SHOP.PRODUCT_BY_ID(id));
-  return response.data;
+  try {
+    await api.delete(`/shop/products/${id}`);
+  } catch (error) {
+    throw error;
+  }
 };
-
 
 const shopService = {
-  getAllProducts,
+  getProducts,
   getProductById,
   createProduct,
   updateProduct,

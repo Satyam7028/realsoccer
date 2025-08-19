@@ -1,45 +1,31 @@
 // client/src/services/authService.js
-import api from './api'; // Our configured Axios instance
-import { API_ENDPOINTS } from '../../shared/constants/apiEndpoints';
+import api from './api';
 
-/**
- * Handles user login.
- * @param {string} email - User's email.
- * @param {string} password - User's password.
- * @returns {Promise<object>} - Response data containing user info and token.
- */
-const login = async (email, password) => {
-  const response = await api.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+const login = async (userData) => {
+  const response = await api.post('/auth/login', userData);
+  if (response.data.token) {
+    localStorage.setItem('user', JSON.stringify(response.data));
+  }
   return response.data;
 };
 
-/**
- * Handles user registration.
- * @param {string} username - User's username.
- * @param {string} email - User's email.
- * @param {string} password - User's password.
- * @returns {Promise<object>} - Response data containing new user info and token.
- */
-const register = async (username, email, password) => {
-  const response = await api.post(API_ENDPOINTS.AUTH.REGISTER, { username, email, password });
+const register = async (userData) => {
+  const response = await api.post('/auth/register', userData);
+  if (response.data.token) {
+    localStorage.setItem('user', JSON.stringify(response.data));
+  }
   return response.data;
 };
 
-/**
- * Fetches the authenticated user's profile.
- * @returns {Promise<object>} - Response data containing user profile.
- */
-const getMe = async () => {
-  const response = await api.get(API_ENDPOINTS.AUTH.ME);
-  return response.data;
+// Add this logout function
+const logout = () => {
+  localStorage.removeItem('user');
 };
-
-// You can add other auth-related functions here, like password reset, etc.
 
 const authService = {
-  login,
   register,
-  getMe,
+  login,
+  logout,
 };
 
 export default authService;

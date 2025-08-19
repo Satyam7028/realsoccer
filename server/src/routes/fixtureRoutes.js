@@ -6,11 +6,10 @@ const {
   getFixtureById,
   updateFixture,
   deleteFixture,
-  getLiveFixtures, // Assuming a separate endpoint for live scores
-} = require('../controllers/fixtureController'); // We will create this controller
+} = require('../controllers/fixtureController');
 const { protect } = require('../middleware/authMiddleware');
 const roleGuard = require('../middleware/roleGuard');
-const { fixtureValidation } = require('../validators/fixtureValidator'); // We will create this validator
+const { fixtureValidator } = require('../validators/fixtureValidator');
 const validateRequest = require('../middleware/validateRequest');
 
 const router = express.Router();
@@ -18,7 +17,7 @@ const router = express.Router();
 // @desc    Create a new fixture
 // @route   POST /api/fixtures
 // @access  Private/Admin
-router.post('/', protect, roleGuard('admin'), fixtureValidation, validateRequest, createFixture);
+router.post('/', protect, roleGuard('admin'), fixtureValidator, validateRequest, createFixture);
 
 // @desc    Get all fixtures
 // @route   GET /api/fixtures
@@ -33,16 +32,11 @@ router.get('/:id', getFixtureById);
 // @desc    Update fixture by ID
 // @route   PUT /api/fixtures/:id
 // @access  Private/Admin
-router.put('/:id', protect, roleGuard('admin'), fixtureValidation, validateRequest, updateFixture);
+router.put('/:id', protect, roleGuard('admin'), fixtureValidator, validateRequest, updateFixture);
 
 // @desc    Delete fixture by ID
 // @route   DELETE /api/fixtures/:id
 // @access  Private/Admin
 router.delete('/:id', protect, roleGuard('admin'), deleteFixture);
-
-// @desc    Get live fixtures (optional, can be integrated into getFixtures with query params)
-// @route   GET /api/fixtures/live
-// @access  Public
-router.get('/live', getLiveFixtures);
 
 module.exports = router;

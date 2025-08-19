@@ -1,43 +1,23 @@
 // server/src/routes/userRoutes.js
 const express = require('express');
 const {
-  getUsers,
-  getUserById,
-  updateUser,
-  deleteUser,
-  updateUserProfile, // For users to update their own profile
-} = require('../controllers/userController'); // We will create this controller
+  getUserProfile,
+  updateUserProfile,
+} = require('../controllers/userController');
 const { protect } = require('../middleware/authMiddleware');
-const roleGuard = require('../middleware/roleGuard');
-const { userUpdateValidation } = require('../validators/userValidator'); // Add validation for user updates
-const validateRequest = require('../middleware/validateRequest'); // Our custom validation middleware
+const { profileUpdateValidation } = require('../validators/userValidator');
+const validateRequest = require('../middleware/validateRequest');
 
 const router = express.Router();
 
-// @desc    Get all users (Admin only)
-// @route   GET /api/users
-// @access  Private/Admin
-router.get('/', protect, roleGuard('admin'), getUsers);
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+router.get('/profile', protect, getUserProfile);
 
-// @desc    Get user by ID (Admin only)
-// @route   GET /api/users/:id
-// @access  Private/Admin
-router.get('/:id', protect, roleGuard('admin'), getUserById);
-
-// @desc    Update user by ID (Admin only)
-// @route   PUT /api/users/:id
-// @access  Private/Admin
-router.put('/:id', protect, roleGuard('admin'), userUpdateValidation, validateRequest, updateUser);
-
-// @desc    Delete user by ID (Admin only)
-// @route   DELETE /api/users/:id
-// @access  Private/Admin
-router.delete('/:id', protect, roleGuard('admin'), deleteUser);
-
-// @desc    Update authenticated user's profile
+// @desc    Update user profile
 // @route   PUT /api/users/profile
 // @access  Private
-router.put('/profile', protect, userUpdateValidation, validateRequest, updateUserProfile);
-
+router.put('/profile', protect, profileUpdateValidation, validateRequest, updateUserProfile);
 
 module.exports = router;

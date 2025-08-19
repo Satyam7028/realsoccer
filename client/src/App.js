@@ -14,7 +14,7 @@ import AdminLayout from './components/layout/AdminLayout';
 // might lead to state management issues. It's often best to choose one approach
 // (e.g., Redux Toolkit for all state) for consistency.
 import AuthProvider from './context/AuthContext';
-import CartProvider from './context/CartContext';
+import { CartProvider } from './context/CartContext';
 
 // Public Pages
 import HomePage from './pages/Home/HomePage';

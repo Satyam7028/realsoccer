@@ -30,10 +30,10 @@ describe('LoginForm', () => {
     );
 
     fireEvent.change(screen.getByLabelText(/Email Address/i), {
-      target: { value: 'test@example.com' },
+      target: { value: 'test@example.com' }
     });
     fireEvent.change(screen.getByLabelText(/Password/i), {
-      target: { value: 'password123' },
+      target: { value: 'password123' }
     });
 
     fireEvent.click(screen.getByRole('button', { name: /Login/i }));

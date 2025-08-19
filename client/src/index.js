@@ -1,20 +1,21 @@
 // client/src/index.js
-
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import './index.css'; // Assuming you have a CSS file for global styles
+import { BrowserRouter as Router } from 'react-router-dom';
+import { Provider } from 'react-redux';
+import store from './state/store'; // Corrected: import the default export
+import './index.css';
 import App from './App';
+import 'react-toastify/dist/ReactToastify.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
+
 root.render(
   <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <Provider store={store}>
+      <Router>
+        <App />
+      </Router>
+    </Provider>
   </React.StrictMode>
 );
-
-// The import and function call for reportWebVitals have been removed to fix the error.
-// If you need to add performance monitoring later, you can create a new file
-// and import it here.

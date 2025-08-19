@@ -1,31 +1,33 @@
-// client/src/tests/integration/cartFlow.test.js
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import App from '../../App';
 
 describe('Shopping Cart Flow', () => {
   it('should allow a user to add a product to the cart and see it in the cart page', async () => {
-    render(<App />);
+    render(
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    );
 
     // 1. Navigate to the shop page
-    fireEvent.click(screen.getByRole('link', { name: /Shop/i }));
+    fireEvent.click(screen.getAllByRole('link', { name: /Shop/i })[0]);
 
-    // Wait until the shop page loads
+    // 2. Wait for the shop page to load
     await waitFor(() => {
-      expect(screen.getByText(/Shop Page/i)).toBeInTheDocument();
+      expect(screen.getByText(/All Products/i)).toBeInTheDocument();
     });
 
-    // 2. Find a product and click "Add" button
-    const addButtons = await screen.findAllByRole('button', { name: /Add/i });
-    fireEvent.click(addButtons[0]);
+    // 3. Add the first product to the cart
+    fireEvent.click(screen.getAllByRole('button', { name: /Add/i })[0]);
 
-    // 3. Navigate to the cart page
+    // 4. Navigate to the cart
     fireEvent.click(screen.getByRole('link', { name: /Cart/i }));
 
-    // 4. Check if the product is in the cart page
+    // 5. Verify the product is in the cart
     await waitFor(() => {
-      expect(screen.getByText(/Your Cart/i)).toBeInTheDocument();
-      expect(screen.getByText(/Total/i)).toBeInTheDocument();
+      expect(screen.getByText(/Test Product/i)).toBeInTheDocument();
     });
   });
 });
