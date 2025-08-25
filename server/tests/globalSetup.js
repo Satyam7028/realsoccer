@@ -1,4 +1,5 @@
 // server/tests/globalSetup.js
+require('dotenv').config({ path: './.env.test' }); // Add this line to explicitly load the test env file
 const mongoose = require('mongoose');
 const app = require('../src/index');
 

@@ -1,33 +1,48 @@
-import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
-import App from '../../App';
+// src/tests/integration/cartFlow.test.js
+import React from "react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import App from "../../App";
+import axios from "axios";
 
-describe('Shopping Cart Flow', () => {
-  it('should allow a user to add a product to the cart and see it in the cart page', async () => {
+// Mock axios response for products
+jest.mock("axios");
+
+describe("Shopping Cart Flow", () => {
+  beforeEach(() => {
+    axios.get.mockResolvedValueOnce({
+      data: [
+        {
+          _id: "1",
+          name: "Test Product 1",
+          price: 100,
+          image: "/test-product-1.jpg",
+        },
+      ],
+    });
+  });
+
+  it("should allow a user to add a product to the cart and see it in the cart page", async () => {
     render(
-      <BrowserRouter>
+      <MemoryRouter initialEntries={["/shop"]}>
         <App />
-      </BrowserRouter>
+      </MemoryRouter>
     );
 
-    // 1. Navigate to the shop page
-    fireEvent.click(screen.getAllByRole('link', { name: /Shop/i })[0]);
+    // 1. Wait for mocked product to appear
+    await waitFor(() =>
+      expect(screen.getByText("Test Product 1")).toBeInTheDocument()
+    );
 
-    // 2. Wait for the shop page to load
-    await waitFor(() => {
-      expect(screen.getByText(/All Products/i)).toBeInTheDocument();
-    });
+    // 2. Click "Add to Cart"
+    fireEvent.click(screen.getByRole("button", { name: /add/i }));
 
-    // 3. Add the first product to the cart
-    fireEvent.click(screen.getAllByRole('button', { name: /Add/i })[0]);
+    // 3. Click cart link
+    fireEvent.click(screen.getByTestId("cart-link"));
 
-    // 4. Navigate to the cart
-    fireEvent.click(screen.getByRole('link', { name: /Cart/i }));
-
-    // 5. Verify the product is in the cart
-    await waitFor(() => {
-      expect(screen.getByText(/Test Product/i)).toBeInTheDocument();
-    });
+    // 4. Verify product appears in cart
+    await waitFor(() =>
+      expect(screen.getByText(/Test Product 1/i)).toBeInTheDocument()
+    );
   });
 });

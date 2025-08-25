@@ -1,22 +1,22 @@
 // server/src/routes/paymentRoutes.js
 const express = require('express');
 const {
-  createPayment,
+  processPayment, // Corrected from createPayment
   getPayments,
   getPaymentById,
-  updatePaymentStatus, // For updating payment status (e.g., from pending to completed)
-} = require('../controllers/paymentController'); // We will create this controller
+  updatePaymentStatus,
+} = require('../controllers/paymentController'); // Updated this import statement
 const { protect } = require('../middleware/authMiddleware');
 const roleGuard = require('../middleware/roleGuard');
-const { paymentValidation } = require('../validators/paymentValidator'); // We will create this validator
+const { paymentValidation } = require('../validators/paymentValidator');
 const validateRequest = require('../middleware/validateRequest');
 
 const router = express.Router();
 
-// @desc    Create a new payment (typically called by order completion or webhook)
+// @desc    Process a payment for an order
 // @route   POST /api/payments
 // @access  Private (usually internal or from payment gateway)
-router.post('/', protect, paymentValidation, validateRequest, createPayment);
+router.post('/', protect, paymentValidation, validateRequest, processPayment); // Corrected function call
 
 // @desc    Get all payments (Admin only)
 // @route   GET /api/payments

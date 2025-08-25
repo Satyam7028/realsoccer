@@ -1,5 +1,5 @@
 // server/src/validators/userValidator.js
-const { body } = require('express-validator');
+const { body, check } = require('express-validator');
 
 const registerValidation = [
   body('username').notEmpty().withMessage('Username is required').trim().escape(),
@@ -19,9 +19,9 @@ const loginValidation = [
 ];
 
 const profileUpdateValidation = [
-  body('username').optional().notEmpty().withMessage('Username cannot be empty').trim().escape(),
-  body('email').optional().isEmail().withMessage('Please provide a valid email address').normalizeEmail(),
-  body('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'),
+  check('username').optional().notEmpty().withMessage('Username cannot be empty').trim().escape(), // Corrected
+  check('email').optional().isEmail().withMessage('Please provide a valid email address').normalizeEmail(), // Corrected
+  check('password').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters long'), // Corrected
 ];
 
 module.exports = {

@@ -22,7 +22,7 @@ describe('ProductCard', () => {
     );
 
     expect(screen.getByText('Test Product')).toBeInTheDocument();
-    expect(screen.getByText('₹100')).toBeInTheDocument();
+    expect(screen.getByText('$100.00')).toBeInTheDocument();
     expect(screen.getByRole('img')).toHaveAttribute('src', '/test-image.jpg');
   });
 

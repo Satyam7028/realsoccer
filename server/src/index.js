@@ -1,7 +1,4 @@
 // server/src/index.js
-if (process.env.NODE_ENV !== 'test') {
-  require('dotenv').config();
-}
 
 const express = require('express');
 const app = express();
@@ -74,7 +71,7 @@ app.use(errorHandler);
 // Always export the app for testing purposes
 module.exports = app;
 
-if (process.env.NODE_ENV !== 'test') {
+if (require.main === module) {
   const PORT = process.env.PORT || 5001;
   app.listen(PORT, () => logger.info(`Server running on port ${PORT}`));
 }

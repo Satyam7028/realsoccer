@@ -19,8 +19,8 @@ const ShopPage = () => {
       setError(null);
       
       try {
-        console.log('Fetching products from:', API_ENDPOINTS.PRODUCTS);
-        const response = await fetch(API_ENDPOINTS.PRODUCTS);
+        console.log('Fetching products from:', API_ENDPOINTS.SHOP.PRODUCTS);
+        const response = await fetch(API_ENDPOINTS.SHOP.PRODUCTS);
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);

@@ -5,7 +5,7 @@ const Order = require('../models/Order');
 const logger = require('../config/logger');
 
 // @desc    Process a payment for an order
-// @route   POST /api/payments/process
+// @route   POST /api/payments
 // @access  Private
 const processPayment = asyncHandler(async (req, res) => {
   const { orderId, paymentMethod, paymentResult } = req.body;
@@ -49,11 +49,19 @@ const processPayment = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Get payment details for a specific order
-// @route   GET /api/payments/:orderId
+// @desc    Get all payments (Admin only)
+// @route   GET /api/payments
+// @access  Private/Admin
+const getPayments = asyncHandler(async (req, res) => {
+  const payments = await Payment.find({}).populate('user', 'username email').populate('order');
+  res.json(payments);
+});
+
+// @desc    Get payment by ID
+// @route   GET /api/payments/:id
 // @access  Private
-const getPaymentDetails = asyncHandler(async (req, res) => {
-  const payment = await Payment.findOne({ order: req.params.orderId })
+const getPaymentById = asyncHandler(async (req, res) => {
+  const payment = await Payment.findById(req.params.id)
     .populate('user', 'username email')
     .populate('order');
 
@@ -67,11 +75,22 @@ const getPaymentDetails = asyncHandler(async (req, res) => {
     res.json(payment);
   } else {
     res.status(404);
-    throw new Error('Payment not found for this order');
+    throw new Error('Payment not found');
   }
+});
+
+// @desc    Update payment status (Admin or webhook)
+// @route   PUT /api/payments/:id/status
+// @access  Private/Admin
+const updatePaymentStatus = asyncHandler(async (req, res) => {
+  // Logic to update payment status
+  // This is a placeholder and needs to be implemented
+  res.status(501).send('Update payment status not implemented yet');
 });
 
 module.exports = {
   processPayment,
-  getPaymentDetails,
+  getPayments,
+  getPaymentById,
+  updatePaymentStatus,
 };
