@@ -1,48 +1,48 @@
-// src/tests/integration/cartFlow.test.js
-import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
-import App from "../../App";
-import axios from "axios";
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import App from '../../App';
+import { CartProvider } from '../../context/CartContext';
+import { Provider } from 'react-redux';
+import store from '../../state/store';
 
-// Mock axios response for products
-jest.mock("axios");
-
-describe("Shopping Cart Flow", () => {
-  beforeEach(() => {
-    axios.get.mockResolvedValueOnce({
-      data: [
-        {
-          _id: "1",
-          name: "Test Product 1",
-          price: 100,
-          image: "/test-product-1.jpg",
-        },
-      ],
-    });
-  });
-
-  it("should allow a user to add a product to the cart and see it in the cart page", async () => {
+describe('Shopping Cart Flow', () => {
+  test('should allow a user to add a product to the cart and see it in the cart page', async () => {
     render(
-      <MemoryRouter initialEntries={["/shop"]}>
-        <App />
-      </MemoryRouter>
+      <Provider store={store}>
+        <CartProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </CartProvider>
+      </Provider>
     );
 
-    // 1. Wait for mocked product to appear
-    await waitFor(() =>
-      expect(screen.getByText("Test Product 1")).toBeInTheDocument()
-    );
+    // 1. Navigate to the shop page
+    fireEvent.click(screen.getAllByRole('link', { name: /Shop/i })[0]);
 
-    // 2. Click "Add to Cart"
-    fireEvent.click(screen.getByRole("button", { name: /add/i }));
+    // 2. Wait for the shop page to load
+    await waitFor(() => {
+      // Look for the "All" button in the filter section
+      const allButtons = screen.getAllByText(/All/i);
+      const filterButton = allButtons.find(button => 
+        button.className.includes('bg-indigo-500') || 
+        button.className.includes('filter') ||
+        button.closest('[class*="filter"]')
+      );
+      expect(filterButton).toBeInTheDocument();
+    });
 
-    // 3. Click cart link
-    fireEvent.click(screen.getByTestId("cart-link"));
+    // 3. Add the first product to the cart
+    fireEvent.click(screen.getAllByRole('button', { name: /Add/i })[0]);
 
-    // 4. Verify product appears in cart
-    await waitFor(() =>
-      expect(screen.getByText(/Test Product 1/i)).toBeInTheDocument()
-    );
+    // 4. Navigate to the cart
+    const cartLinks = screen.getAllByRole('link', { href: '/cart' });
+    fireEvent.click(cartLinks[0]); // Click the first cart link (header)
+
+    // 5. Verify the product is in the cart
+    await waitFor(() => {
+      expect(screen.getByText('Test Product 1')).toBeInTheDocument();
+    });
   });
 });
